@@ -1,5 +1,4 @@
 {% load static %}
-{% load json_script %}
 
 <h2>{{ repo.owner }}/{{ repo.name }}</h2>
 <p><strong>Description:</strong> {{ repo.description }}</p>
@@ -36,14 +35,32 @@
 <h3>AI-Powered Insight</h3>
 <p>{{ repo.repo_insight }}</p>
 
-<!-- Embed JSON safely -->
-{{ repo.languages|json_script:"languages-data" }}
-{{ repo.top_contributors|json_script:"contributors-data" }}
-{{ repo.commit_timeline|json_script:"commits-data" }}
-{{ repo.pull_requests|json_script:"pulls-data" }}
-{{ repo.releases|json_script:"releases-data" }}
-{{ repo.issue_aging|json_script:"issue-aging-data" }}
+<!-- Embedded JSON data -->
+<script id="languages-data" type="application/json">
+    {{ repo.languages|safe|escapejs }}
+</script>
 
+<script id="contributors-data" type="application/json">
+    {{ repo.top_contributors|safe|escapejs }}
+</script>
+
+<script id="commits-data" type="application/json">
+    {{ repo.commit_timeline|safe|escapejs }}
+</script>
+
+<script id="pulls-data" type="application/json">
+    {{ repo.pull_requests|safe|escapejs }}
+</script>
+
+<script id="releases-data" type="application/json">
+    {{ repo.releases|safe|escapejs }}
+</script>
+
+<script id="issue-aging-data" type="application/json">
+    {{ repo.issue_aging|safe|escapejs }}
+</script>
+
+<!-- Frontend Rendering Script -->
 <script>
     const languages = JSON.parse(document.getElementById("languages-data").textContent);
     const contributors = JSON.parse(document.getElementById("contributors-data").textContent);
@@ -73,7 +90,8 @@
     const releaseList = document.getElementById("releases-list");
     releases.forEach(r => {
         const name = r.name || r.tag_name || "Unnamed";
-        releaseList.innerHTML += `<li>${name} (${r.published_at?.slice(0, 10) || "Unknown date"})</li>`;
+        const date = r.published_at ? r.published_at.slice(0, 10) : "Unknown date";
+        releaseList.innerHTML += `<li>${name} (${date})</li>`;
     });
 
     document.getElementById("age-7").textContent = aging.less_than_7_days;
