@@ -1,9 +1,82 @@
+{% load static %}
+{% load json_script %}
+
 <h2>{{ repo.owner }}/{{ repo.name }}</h2>
 <p><strong>Description:</strong> {{ repo.description }}</p>
 <p><strong>Stars:</strong> {{ repo.stars }}</p>
 <p><strong>Forks:</strong> {{ repo.forks }}</p>
 <p><strong>Open Issues:</strong> {{ repo.open_issues }}</p>
+<p><strong>Watchers:</strong> {{ repo.watchers }}</p>
+<p><strong>Subscribers:</strong> {{ repo.subscribers }}</p>
 <p><strong>Created At:</strong> {{ repo.created_at }}</p>
 <p><strong>Last Updated:</strong> {{ repo.last_updated }}</p>
+
+<h3>Languages Used</h3>
+<ul id="languages-list"></ul>
+
+<h3>Top Contributors</h3>
+<ul id="contributors-list"></ul>
+
+<h3>Commit History (Last 52 Weeks)</h3>
+<ul id="commit-history"></ul>
+
+<h3>Pull Requests</h3>
+<p>Total Pull Requests: <span id="pull-count"></span></p>
+
+<h3>Releases</h3>
+<ul id="releases-list"></ul>
+
+<h3>Open Issues Aging</h3>
+<ul id="issue-aging">
+    <li>Less than 7 days: <span id="age-7"></span></li>
+    <li>Between 7 and 30 days: <span id="age-30"></span></li>
+    <li>More than 30 days: <span id="age-30plus"></span></li>
+</ul>
+
 <h3>AI-Powered Insight</h3>
-<p>{{ repo.repository_AI_insight }}</p>
+<p>{{ repo.repo_insight }}</p>
+
+<!-- Embed JSON safely -->
+{{ repo.languages|json_script:"languages-data" }}
+{{ repo.top_contributors|json_script:"contributors-data" }}
+{{ repo.commit_timeline|json_script:"commits-data" }}
+{{ repo.pull_requests|json_script:"pulls-data" }}
+{{ repo.releases|json_script:"releases-data" }}
+{{ repo.issue_aging|json_script:"issue-aging-data" }}
+
+<script>
+    const languages = JSON.parse(document.getElementById("languages-data").textContent);
+    const contributors = JSON.parse(document.getElementById("contributors-data").textContent);
+    const commits = JSON.parse(document.getElementById("commits-data").textContent);
+    const pulls = JSON.parse(document.getElementById("pulls-data").textContent);
+    const releases = JSON.parse(document.getElementById("releases-data").textContent);
+    const aging = JSON.parse(document.getElementById("issue-aging-data").textContent);
+
+    const langList = document.getElementById("languages-list");
+    for (const [lang, bytes] of Object.entries(languages)) {
+        langList.innerHTML += `<li>${lang}: ${bytes} bytes</li>`;
+    }
+
+    const contribList = document.getElementById("contributors-list");
+    contributors.forEach(c => {
+        contribList.innerHTML += `<li>${c.login}: ${c.contributions} commits</li>`;
+    });
+
+    const commitList = document.getElementById("commit-history");
+    commits.forEach(week => {
+        const date = new Date(week.week * 1000).toISOString().slice(0, 10);
+        commitList.innerHTML += `<li>${date}: ${week.total} commits</li>`;
+    });
+
+    document.getElementById("pull-count").textContent = pulls.count;
+
+    const releaseList = document.getElementById("releases-list");
+    releases.forEach(r => {
+        const name = r.name || r.tag_name || "Unnamed";
+        releaseList.innerHTML += `<li>${name} (${r.published_at?.slice(0, 10) || "Unknown date"})</li>`;
+    });
+
+    document.getElementById("age-7").textContent = aging.less_than_7_days;
+    document.getElementById("age-30").textContent = aging.between_7_and_30_days;
+    document.getElementById("age-30plus").textContent = aging.more_than_30_days;
+</script>
